@@ -4,8 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "d3-dsv": "^1.0.8",
-    "d3-time-format": "^2.1.1",
-    "node-fetch": "^2.1.2"
+    "d3": "^5.0.0",
+    "node-fetch": "^2.1.2",
+    "prettier": "^1.11.1"
   }
 }

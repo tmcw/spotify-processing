@@ -1,46 +1,53 @@
-const fs = require('fs');
-const fetch = require('node-fetch');
-const dsv = require('d3-dsv');
-const {timeFormat} = require('d3-time-format');
+const fs = require("fs");
+const fetch = require("node-fetch");
+const { csvParse, timeFormat, timeParse, timeWeek, nest, sum } = require("d3");
 
-let days = [];
+const timeFormatter = timeFormat("%Y-%m-%d");
+const timeParser = timeParse("%Y-%m-%d");
 
-const ids = {};
-const formatTime = timeFormat("%Y-%m-%d");
+function run() {
+  let idMap = {};
+  let weeks = [];
+  let filenames = fs.readdirSync("data").sort();
+  const out = {};
 
-async function download(d) {
-  const dateString = formatTime(d);
-  const csv = dsv.csvParse(await (await fetch(`https://spotifycharts.com/regional/global/daily/${dateString}/download`)).text());
-  const out = {
-    date: dateString
-  };
-  csv.forEach(row => {
-    const id = row.URL.match(/\/([^\/]*)$/)[1];
-    ids[id] = {
-      artist: row.Artist,
-      track: row['Track Name']
-    };
-    out[id] = +row.Streams;
-  });
-  return out;
-}
+  for (let filename of filenames) {
+    let date = timeParser(filename.replace(".csv", ""));
+    let rows = csvParse(fs.readFileSync(`data/${filename}`, "utf8"));
 
-
-async function run() {
-  const start = new Date('2018-03-20');
-  const end = new Date('2018-03-27');
-  const now = new Date(start);
-  const days = [];
-  while (now <= end) {
-    console.log(`Downloading ${now}`);
-    days.push(await download(new Date(now)));
-    now.setDate(now.getDate() + 1);
+    rows.forEach(row => {
+      const id = row.URL.match(/\/([^\/]*)$/)[1];
+      idMap[id] = {
+        artist: row.Artist,
+        track: row["Track Name"]
+      };
+      if (!out[id]) out[id] = [];
+      out[id].push([date, +row.Streams]);
+    });
   }
 
-  fs.writeFileSync('tracks.json', JSON.stringify({
-    ids,
-    days
-  }, null, 2));
+  for (let id in out) {
+    out[id] = nest()
+      .key(k => {
+        return timeWeek(k[0]);
+      })
+      .rollup(val => sum(val.map(s => s[1])))
+      .entries(out[id])
+      .map(({ key, value }) => {
+        return {
+          date: timeFormatter(new Date(key)),
+          streams: value
+        };
+      });
+  }
+
+  fs.writeFileSync(
+    "tracks.json",
+    JSON.stringify({
+      idMap,
+      out
+    })
+  );
 }
 
 run();
