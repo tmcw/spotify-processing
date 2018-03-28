@@ -22,16 +22,16 @@ function run() {
         track: row["Track Name"]
       };
       if (!out[id]) out[id] = [];
-      out[id].push([date, +row.Streams]);
+      out[id].push({ date, streams: +row.Streams });
     });
   }
 
   for (let id in out) {
     out[id] = nest()
-      .key(k => {
-        return timeWeek(k[0]);
+      .key(({ date }) => {
+        return timeWeek(date);
       })
-      .rollup(val => sum(val.map(s => s[1])))
+      .rollup(val => sum(val.map(({ streams }) => streams)))
       .entries(out[id])
       .map(({ key, value }) => {
         return {
