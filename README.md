@@ -1,5 +1,7 @@
 # spotify analysis 'dirty code'
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/tmcw/spotify-processing.svg)](https://greenkeeper.io/)
+
 Notes:
 
 The following data files are missing, because they do not exist at the source level:
